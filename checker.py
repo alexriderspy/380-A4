@@ -73,6 +73,13 @@ def compare_files(standard_output, submission_output):
             your_block = f2.read(args.size * m**2)
             if compare_blocks(correct_block, your_block, m, x[0] == x[1]):
                 cnt += 1
+            else:
+                print('this is correct block')
+                correct_mat = np.frombuffer(correct_block, dtype=eval(f"np.uint{8 * args.size}")).reshape((m, m))
+                print(correct_mat)
+                print('this is your block')
+                your_mat = np.frombuffer(your_block, dtype=eval(f"np.uint{8 * args.size}")).reshape((m, m))
+                print(your_mat)
 
     if cnt < k1:
         return 1.0 * cnt / k1, f"{cnt} correct blocks found out of {k1}"

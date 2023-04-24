@@ -1,5 +1,5 @@
-python3 gen-input.py -n 32 -m 1 -z 230 -o input1
-python3 gen-input.py -n 32 -m 1 -z 330 -o input2
+python3 gen-input.py -n 30000 -m 4 -z 230 -o input1
+python3 gen-input.py -n 30000 -m 4 -z 330 -o input2
 python3 gen-output.py -f input1 input2 -e 2 -o output1
 nvcc main2.cu
 #g++ main.cpp

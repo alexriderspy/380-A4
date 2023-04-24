@@ -2,15 +2,17 @@
 
 using namespace std;
 
+#define uint unsigned int
 #define ll long long
 #define vl vector<ll>
 #define MAX_VAL ((1LL << 32) - 1LL)
 
-__global__ void matrixMul(int *a, int *b, ll *c, int n)
+__global__ void matrixMul(int *a, int *b, uint *c, int n)
 {
     int row = blockIdx.y * blockDim.y + threadIdx.y;
     int col = blockIdx.x * blockDim.x + threadIdx.x;
 
+    
     if (row < n && col < n)
     {
         ll tmp = 0;
@@ -18,8 +20,9 @@ __global__ void matrixMul(int *a, int *b, ll *c, int n)
         {
             tmp = min(MAX_VAL,tmp +  (ll)a[row * n + i] * (ll)b[i * n + col]);
         }
-        c[row * n + col] = tmp;
+        c[row * n + col] = (uint)tmp;
     }
+    //__syncthreads();
 }
 
 int main(int argc, char **argv)
@@ -27,6 +30,7 @@ int main(int argc, char **argv)
     unsigned char bytes[4];
     unsigned char bytes1[2];
 
+  
     int n = 0, m = 0, k1 = 0, starti, startj;
 
     FILE *fp = fopen(argv[1], "rb");
@@ -40,7 +44,8 @@ int main(int argc, char **argv)
 
     int *a;
 
-    cudaMallocManaged(&a, n * n); //(1<<30)
+  
+    cudaMallocManaged(&a, n * n * sizeof(int)); //(1<<30)
     int cnt = 0;
 
     while (cnt < k1)
@@ -64,15 +69,15 @@ int main(int argc, char **argv)
         // cout<<'\n';
         cnt++;
     }
-    cout << "m1\n";
-    for (int i = 0; i < n; ++i)
-    {
-        for (int j = 0; j < n; ++j)
-        {
-            cout << a[i * n + j] << ' ';
-        }
-        cout << '\n';
-    }
+    // cout << "m1\n";
+    // for (int i = 0; i < n; ++i)
+    // {
+    //     for (int j = 0; j < n; ++j)
+    //     {
+    //         cout << a[i * n + j] << ' ';
+    //     }
+    //     cout << '\n';
+    // }
     fp = fopen(argv[2], "rb");
 
     fread(bytes, 4, 1, fp);
@@ -83,10 +88,10 @@ int main(int argc, char **argv)
     int k2 = (bytes[0] | (bytes[1] << 8) | (bytes[2] << 16) | (bytes[3] << 24));
 
     int *b;
-    ll *c;
+    uint *c;
 
-    cudaMallocManaged(&b, n * n); //(1<<30)
-    cudaMallocManaged(&c, n * n); //(1<<30)
+    cudaMallocManaged(&b, n * n * sizeof(int)); //(1<<30)
+    cudaMallocManaged(&c, n * n * sizeof(uint)); //(1<<30)
     cnt = 0;
 
     while (cnt < k2)
@@ -109,27 +114,29 @@ int main(int argc, char **argv)
         // cout<<'\n';
         cnt++;
     }
-    cout << "m2\n";
-    for (int i = 0; i < n; ++i)
-    {
-        for (int j = 0; j < n; ++j)
-        {
-            cout << b[i * n + j] << ' ';
-        }
-        cout << '\n';
-    }
+    // cout << "m2\n";
+    // for (int i = 0; i < n; ++i)
+    // {
+    //     for (int j = 0; j < n; ++j)
+    //     {
+    //         cout << b[i * n + j] << ' ';
+    //     }
+    //     cout << '\n';
+    // }
 
     int threads = 32;
     int blocks = (n + threads - 1) / threads;
-
+    //cout<<blocks<<'\n';
     dim3 THREADS(threads, threads);
     dim3 BLOCKS(blocks, blocks);
 
     matrixMul<<<BLOCKS, THREADS>>>(a, b, c, n);
     cudaDeviceSynchronize();
 
+    //verify_result(a, b, c, n);
+
     int total = 0;
-    vector<pair<int, int>> indices;
+    vector<pair<int, int> > indices;
 
     for (int i = 0; i < (n / m); ++i)
     {
@@ -157,15 +164,15 @@ int main(int argc, char **argv)
             }
         }
     }
-    cout << "m3\n";
-    for (int i = 0; i < n; ++i)
-    {
-        for (int j = 0; j < n; ++j)
-        {
-            cout << c[i * n + j] << ' ';
-        }
-        cout << '\n';
-    }
+    // cout << "m3\n";
+    // for (int i = 0; i < n; ++i)
+    // {
+    //     for (int j = 0; j < n; ++j)
+    //     {
+    //         cout << c[i * n + j] << ' ';
+    //     }
+    //     cout << '\n';
+    // }
 
     ofstream file(argv[3], ios::binary);
     file.write((char *)&n, 4);
